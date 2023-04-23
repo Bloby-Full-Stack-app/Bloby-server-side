@@ -1,0 +1,27 @@
+version: "3"
+services:
+  examen-cote-serveur-2223:
+    build: .
+    environment:
+      - NODE_ENV=production
+    ports: 
+      - "8090:8090" 
+    networks:
+      - node2223sp  
+    depends_on:
+      - mongo
+    volumes:
+      - media:/public/images
+  mongo: 
+    image: mongo
+    ports:
+      - "8091:8091" 
+    volumes:
+      - db:/data
+    networks:
+      - node2223sp     
+volumes:
+  db:
+  media:
+networks: 
+  node2223sp:
