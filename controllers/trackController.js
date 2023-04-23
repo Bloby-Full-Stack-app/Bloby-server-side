@@ -106,6 +106,23 @@ export default {
         }
     },
 
+    getTrack: async (req, res) => {
+        const { trackId } = req.params;
+        try {
+            const track = await Track.findById(trackId);
+            if (!track) {
+                return res.status(404).send({ message: 'Track not found' });
+            }
+            res.status(200).send({
+                data: track,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error fetching track' });
+        }
+    },
+    
+
     likeTrack: async (req, res) => {
         const { trackId } = req.params;
         const userId = req.user.id;

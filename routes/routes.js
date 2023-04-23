@@ -15,5 +15,6 @@ router.post('/uploadTrack', multer, trackController.uploadTrack);
 router.get('/fetchTracks', trackController.fetchTracks);
 router.post('/likeTrack/:trackId', userController.getCurrentUser, trackController.likeTrack);
 router.get('/getTracks', userController.getCurrentUser, trackController.getCurrentUserTracks);
+router.get('/getTrack/:trackId', trackController.getTrack);
 
 export default router;
