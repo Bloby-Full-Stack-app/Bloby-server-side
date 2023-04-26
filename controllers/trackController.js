@@ -47,31 +47,30 @@ export default {
         try {
             const fileBuffer = fs.readFileSync(req.file.path);
             const fileBuffers = Buffer.from(fileBuffer, 'base64');
-
-            console.log(req.file);
             // Parse the ID3 tags
             
             const tags = ID3.read(fileBuffers);
-            const imageBuffer = tags['image']['imageBuffer'];
             const imageName = uuid(); 
-            const imagePath = `public/images/${imageName}.png`;
-            fs.writeFile(imagePath, imageBuffer, (err) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-                console.log('Image saved successfully');
-            });
+            if (tags['image']) {
+                const imagePath = `public/images/${imageName}.png`;
+                fs.writeFile(imagePath, tags['image']['imageBuffer'], (err) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    console.log('Image saved successfully');
+                });
+            }
 
             res.status(201).send({ 
                 message: 'Track uploaded successfully',
                 data: {
-                    artist: tags['artist'],
-                    name: tags['title'],
-                    length: tags['length'],
-                    Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png`,
-                    album: tags['album'],
-                    genre: tags['genre'],
+                    artist: tags['artist'] || 'Unknown',
+                    name: tags['title'] || 'Unknown',
+                    length: tags['length'] || 'Unknown',
+                    Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png` || 'Unknown',
+                    album: tags['album'] || 'Unknown',
+                    genre: tags['genre'] || 'Unknown',
                     mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${req.file.filename}`,
                 }  
             });
