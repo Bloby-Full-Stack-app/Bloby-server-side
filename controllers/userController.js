@@ -27,7 +27,7 @@ export default {
         const token = await Token.create({
             email,
             token: jwt.sign({ email }, 'secret'),
-            expires: 3600,
+            expires: Date.now() + 3600000,
         });
       
         // set authorization header token

@@ -6,6 +6,7 @@ import { NotFoundError, errorHandler } from "./middlewares/error-handler.js";
 import morgan from "morgan";
 import connectDb from "./config/db.js";
 import router from "./routes/routes.js";
+import path from 'path';
 const app = express();
 
 const corsOptions = {
@@ -28,6 +29,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+app.get("/api/*", function (req, res) {
+  res.sendFile(path.join(__dirname, "build/index.html"), function (err) {
+    if (err) {
+      res.status(500).send(err);
+      console.log(err);
+    }
+  });
+});
 
 app.use(NotFoundError);
 app.use(errorHandler);
