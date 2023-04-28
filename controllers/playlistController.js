@@ -27,7 +27,8 @@ export default {
       },
 
       addTrackToPlaylist : async (req, res) => {
-        const { playlistName, trackId } = req.body;
+        const { trackId } = req.params;
+        const { playlistName } = req.body;
         const userId = req.user.id;
 
         try {
@@ -56,10 +57,47 @@ export default {
           playlist.tracks.push(track);
           await playlist.save();
       
-          res.status(200).json({ message: 'Track added to playlist successfully' });
+          res.status(200).send({ 
+            message: 'Track added to playlist successfully',
+            data: playlist
+          });
         } catch (error) {
           console.error(error);
-          res.status(500).json({ message: 'Error adding track to playlist' });
+          res.status(500).send({ 
+            message: 'Error adding track to playlist',
+          });
         }
       },
+
+      getCurrentUserPlaylists: async (req, res) => {
+        try {
+          const playlists = await Playlist.find({ createdBy: req.user.id });
+          res.status(200).send({ 
+            data: playlists 
+          });
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ message: 'Error fetching playlists' });
+        }
+      },
+
+      getPlaylistById: async (req, res) => {
+        const { playlistId } = req.params;
+      
+        try {
+          const playlist = await Playlist.findById(playlistId);
+      
+          if (!playlist) {
+            return res.status(404).json({ message: 'Playlist not found' });
+          }
+      
+          res.status(200).send({ 
+            data: playlist 
+          });
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ message: 'Error fetching playlist' });
+        }
+      },
+
 }
