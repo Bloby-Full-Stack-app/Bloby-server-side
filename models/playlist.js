@@ -20,6 +20,11 @@ const playlistSchema = new Schema({
         ref: 'Track',
         required: true
     }],
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+        required: false
+    }],
     createdAt: {
         type: Date,
         default: Date.now

@@ -18,5 +18,6 @@ router.get('/getTracks', userController.getCurrentUser, trackController.getCurre
 router.get('/getTrack/:trackId', trackController.getTrack);
 router.get('/getPlaylists', userController.getCurrentUser, playlistController.getCurrentUserPlaylists);
 router.get('/getPlaylist/:playlistId', playlistController.getPlaylistById);
+router.post('/commentPlaylist/:playlistId', userController.getCurrentUser, playlistController.commentPlaylist);
 
 export default router;
