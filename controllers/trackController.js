@@ -4,7 +4,7 @@ import { validationResult } from 'express-validator';
 import ID3 from 'node-id3';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
-//import { spawn } from 'child_process';
+import { spawn } from 'child_process';
 
 export default {
     addTrack: async (req, res) => {
@@ -46,24 +46,6 @@ export default {
             return res.status(400).json({ errors: errors.array() });
         }
         try {
-            /*const inputFile1 = '/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/mp3-1682737177909-14276040.mp3'
-            const inputFile2 = '/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/mp3-1682736277009-611779951.mp3';
-            const outputFile = '/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/test2.mp3';
-            const start = '00:05:00';
-            const duration = '00:00:10';
-
-            const args = [
-                '-i', inputFile1,
-                '-i', inputFile2,
-                '-filter_complex', 'amix=inputs=2:duration=longest',
-                outputFile,
-            ];
-
-            const ffmpeg = spawn('ffmpeg', args);
-
-            ffmpeg.on('exit', (code) => {
-                console.log(`ffmpeg process exited with code ${code}`);
-            });*/
             const fileBuffer = fs.readFileSync(req.file.path);
             const fileBuffers = Buffer.from(fileBuffer, 'base64');
             // Parse the ID3 tags
@@ -170,4 +152,50 @@ export default {
             res.status(500).send({ message: 'Error liking/unliking track' });
         }
     },
+
+    mergeTracks: async (req, res) => {
+        const mp3File = req.files;
+        const userId = req.user.id;
+
+        try {
+            const user = await User.findById(userId);
+            const inputFile1 = mp3File[0].path;
+            const inputFile2 = mp3File[1].path;
+            const outputFileName = uuid() + '.mp3';
+            const outputFile = `/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/${outputFileName}`;
+
+            const args = [
+                '-i', inputFile1,
+                '-i', inputFile2,
+                '-filter_complex', 'amix=inputs=2:duration=longest',
+                outputFile,
+            ];
+
+            const ffmpeg = spawn('ffmpeg', args);
+
+            ffmpeg.on('exit', (code) => {
+                const fileBuffer = fs.readFileSync(inputFile1);
+                const fileBuffers = Buffer.from(fileBuffer, 'base64');
+
+                const tags = ID3.read(fileBuffers);
+
+                console.log(`FFmpeg process exited with code ${code}`);
+                res.status(200).send({
+                    message: 'Tracks merged successfully',
+                    data: {
+                        artist: tags['artist'] || user.username || 'Unknown',
+                        name: tags['title'] || 'Unknown',
+                        length: tags['length'] || 'Unknown',
+                        album: tags['album'] || 'Unknown',
+                        genre: tags['genre'] || 'Unknown',
+                        mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFile}`,
+                    }
+                });
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error mergin tracks' });
+        }
+    },
+
 }
