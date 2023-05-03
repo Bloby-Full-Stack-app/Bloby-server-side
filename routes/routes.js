@@ -20,4 +20,5 @@ router.get('/getPlaylists', userController.getCurrentUser, playlistController.ge
 router.get('/getPlaylist/:playlistId', playlistController.getPlaylistById);
 router.post('/commentPlaylist/:playlistId', userController.getCurrentUser, playlistController.commentPlaylist);
 router.post('/mergeTracks', multipleMulter, userController.getCurrentUser, trackController.mergeTracks);
+router.get('/fetchLikedTracks', userController.getCurrentUser, trackController.fetchLikedTracks);
 export default router;
