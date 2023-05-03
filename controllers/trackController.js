@@ -124,6 +124,7 @@ export default {
     likeTrack: async (req, res) => {
         const { trackId } = req.params;
         const userId = req.user.id;
+        let isLiked = false;
 
         try {
             const user = await User.findById(userId);
@@ -138,16 +139,39 @@ export default {
 
             if (likedTrack) {
                 user.likedTracks.pull(track);
+                // set a bool variable called isLiked to false
+                isLiked = false;
                 await user.save();
-                res.status(200).send({ message: 'Track unliked successfully' });
+                res.status(200).send({
+                    isLiked : isLiked,
+                    message: 'Track unliked successfully'
+                });
             } else {
                 user.likedTracks.push(track);
+                isLiked = true;
                 await user.save();
-                res.status(200).send({ message: 'Track liked successfully' });
+                res.status(200).send({
+                    isLiked : isLiked,
+                    message: 'Track liked successfully' 
+                });
             }
         } catch (error) {
             console.error(error);
             res.status(500).send({ message: 'Error liking/unliking track' });
+        }
+    },
+
+    fetchLikedTracks: async (req, res) => {
+        const userId = req.user.id;
+
+        try {
+            const user = await User.findById(userId).populate('likedTracks');
+            res.status(200).send({
+                data: user.likedTracks,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error fetching liked tracks' });
         }
     },
 
