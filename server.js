@@ -1,13 +1,18 @@
 import express from "express";
 import cors from "cors";
 import * as dotenv from "dotenv";
-
 import { NotFoundError, errorHandler } from "./middlewares/error-handler.js";
 import morgan from "morgan";
 import connectDb from "./config/db.js";
 import router from "./routes/routes.js";
 import path from 'path';
+import { fileURLToPath } from 'url';
+
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+
+const __dirname = path.dirname(__filename);
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -23,8 +28,6 @@ app.use(morgan("dev"));
 app.use(cors(corsOptions));
 connectDb();
 
-app.use("/public/images", express.static("media"));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,6 +41,9 @@ app.get("/api/*", function (req, res) {
     }
   });
 });
+
+app.use("/public/mp3", express.static(path.join(__dirname, "public/mp3")));
+app.use("/public/images", express.static(path.join(__dirname, "public/images")));
 
 app.use(NotFoundError);
 app.use(errorHandler);

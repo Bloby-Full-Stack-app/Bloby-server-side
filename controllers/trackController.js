@@ -24,7 +24,6 @@ export default {
                 album: album,
                 genre: genre,
                 mp3: mp3,
-                //Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${req.file.filename}`,
             });
 
             await newTrack.save();
@@ -122,7 +121,6 @@ export default {
         }
     },
 
-
     likeTrack: async (req, res) => {
         const { trackId } = req.params;
         const userId = req.user.id;
@@ -154,15 +152,14 @@ export default {
     },
 
     mergeTracks: async (req, res) => {
-        const mp3File = req.files;
         const userId = req.user.id;
 
         try {
             const user = await User.findById(userId);
-            const inputFile1 = mp3File[0].path;
-            const inputFile2 = mp3File[1].path;
+            const inputFile1 = req.files[0].path;
+            const inputFile2 = req.files[1].path;
             const outputFileName = uuid() + '.mp3';
-            const outputFile = `/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/${outputFileName}`;
+            const outputFile = `public/mp3/${outputFileName}`;
 
             const args = [
                 '-i', inputFile1,
@@ -174,7 +171,7 @@ export default {
             const ffmpeg = spawn('ffmpeg', args);
 
             ffmpeg.on('exit', (code) => {
-                const fileBuffer = fs.readFileSync(inputFile1);
+                const fileBuffer = fs.readFileSync(outputFile);
                 const fileBuffers = Buffer.from(fileBuffer, 'base64');
 
                 const tags = ID3.read(fileBuffers);
@@ -188,7 +185,7 @@ export default {
                         length: tags['length'] || 'Unknown',
                         album: tags['album'] || 'Unknown',
                         genre: tags['genre'] || 'Unknown',
-                        mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFile}`,
+                        mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFileName}`,
                     }
                 });
             });
