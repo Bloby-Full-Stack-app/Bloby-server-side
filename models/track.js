@@ -16,7 +16,8 @@ const trackSchema = new mongoose.Schema({
     },
     Image: {
       type: String,
-      required: false
+      required: false,
+      default: 'http://localhost:3000/assets/img/covers/cover.svg'
     },
     album: {
       type: String,

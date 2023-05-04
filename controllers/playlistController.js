@@ -29,7 +29,7 @@ export default {
 
   addTrackToPlaylist: async (req, res) => {
     const { trackId } = req.params;
-    const { playlistName } = req.body;
+    const { playlistName, playlistId } = req.body;
     const userId = req.user.id;
 
     try {
@@ -41,7 +41,7 @@ export default {
       }
 
       // Check if the playlist already exists
-      let playlist = await Playlist.findOne({ name: playlistName });
+      let playlist = await Playlist.findById({ _id: playlistId, name: playlistName });
 
       // If the playlist does not exist, create a new one
       if (!playlist) {
@@ -70,6 +70,45 @@ export default {
     }
   },
 
+  removeTrackFromPlaylist: async (req, res) => {
+    const { trackId } = req.params;
+    const { playlistId } = req.body;
+    const userId = req.user.id;
+
+    try {
+      // Find the user
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Find the playlist
+      const playlist = await Playlist.findById(playlistId);
+
+      if (!playlist) {
+        return res.status(404).json({ message: 'Playlist not found' });
+      }
+
+      // Find the track to remove from the playlist
+      const track = await Track.findById(trackId);
+
+      // Remove the track from the playlist
+      playlist.tracks.pull(track);
+      await playlist.save();
+
+      res.status(200).send({
+        message: 'Track removed from playlist successfully',
+        data: playlist
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        message: 'Error removing track from playlist',
+      });
+    }
+  },
+
   getCurrentUserPlaylists: async (req, res) => {
     try {
       const playlists = await Playlist.find({ createdBy: req.user.id });
@@ -94,7 +133,8 @@ export default {
             path: 'user',
             select: 'username'
           }
-        });
+        })
+        .populate('createdBy', 'username');
 
       if (!playlist) {
         return res.status(404).json({ message: 'Playlist not found' });

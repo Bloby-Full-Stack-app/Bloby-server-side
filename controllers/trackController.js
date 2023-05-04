@@ -9,14 +9,19 @@ import { spawn } from 'child_process';
 export default {
     addTrack: async (req, res) => {
         const errors = validationResult(req);
-        //const userId = req.user.id;
+        const userId = req.user.id;
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
         const { artist, name, image, album, genre, mp3 } = req.body;
 
         try {
-            //const user = await User.findById(userId);
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
             const newTrack = new Track({
                 artist: artist,
                 name: name,
@@ -28,8 +33,11 @@ export default {
 
             await newTrack.save();
 
-            //user.releases.push(newTrack);
-            //user.save();
+            // if artist is the same as the username then add the track to the user's releases
+            if (artist === user.username) {
+                user.releases.push(newTrack);
+                await user.save();
+            }
 
             res.status(201).send({ message: 'Track created successfully', track: newTrack });
         } catch (error) {
@@ -68,7 +76,7 @@ export default {
                     artist: tags['artist'] || 'Unknown',
                     name: tags['title'] || 'Unknown',
                     length: tags['length'] || 'Unknown',
-                    Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png` || 'Unknown',
+                    Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png`,
                     album: tags['album'] || 'Unknown',
                     genre: tags['genre'] || 'Unknown',
                     mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${req.file.filename}`,
@@ -93,11 +101,17 @@ export default {
         }
     },
 
-    getCurrentUserTracks: async (req, res) => {
+    fetchCurrentUserReleases : async (req, res) => {
+        const userId = req.user.id;
         try {
-            const tracks = await Track.find({ user: req.user.id });
+
+
+            const user = await User.findById(userId).populate('releases');
+            if (!user) {
+                return res.status(404).send({ message: 'User not found' });
+            }
             res.status(200).send({
-                data: tracks,
+                data: user.releases,
             });
         } catch (error) {
             console.error(error);
@@ -177,11 +191,18 @@ export default {
 
     mergeTracks: async (req, res) => {
         const userId = req.user.id;
+        const { file1, file2 } = req.body;
 
         try {
             const user = await User.findById(userId);
-            const inputFile1 = req.files[0].path;
-            const inputFile2 = req.files[1].path;
+
+            if (!user) {
+                return res.status(404).send({ message: 'User not found' });
+            }
+
+            // if there are uploaded files then use the path of the uploaded files else use file1 and file2
+            const inputFile1 = req.file ? req.file[0].path : file1;
+            const inputFile2 = req.file ? req.file[1].path : file2;
             const outputFileName = uuid() + '.mp3';
             const outputFile = `public/mp3/${outputFileName}`;
 
