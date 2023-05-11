@@ -15,8 +15,9 @@ export default {
             });
         }
         if (!await bcrypt.compare(password, user.password)) {
-            return res.status(400).send ({
-                statusCode : 400, message: 'Password is incorrect'
+            return res.status(400).json ({
+                statusCode : 400, 
+                message: 'Password is incorrect'
             });
           }
 
