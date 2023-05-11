@@ -4,7 +4,7 @@ import { validationResult } from 'express-validator';
 import ID3 from 'node-id3';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
-import { spawn } from 'child_process';
+import ffmpeg from 'fluent-ffmpeg';
 
 export default {
     addTrack: async (req, res) => {
@@ -101,7 +101,7 @@ export default {
         }
     },
 
-    fetchCurrentUserReleases : async (req, res) => {
+    fetchCurrentUserReleases: async (req, res) => {
         const userId = req.user.id;
         try {
 
@@ -157,7 +157,7 @@ export default {
                 isLiked = false;
                 await user.save();
                 res.status(200).send({
-                    isLiked : isLiked,
+                    isLiked: isLiked,
                     message: 'Track unliked successfully'
                 });
             } else {
@@ -165,8 +165,8 @@ export default {
                 isLiked = true;
                 await user.save();
                 res.status(200).send({
-                    isLiked : isLiked,
-                    message: 'Track liked successfully' 
+                    isLiked: isLiked,
+                    message: 'Track liked successfully'
                 });
             }
         } catch (error) {
@@ -191,7 +191,6 @@ export default {
 
     mergeTracks: async (req, res) => {
         const userId = req.user.id;
-        const { file1, file2 } = req.body;
 
         try {
             const user = await User.findById(userId);
@@ -200,40 +199,111 @@ export default {
                 return res.status(404).send({ message: 'User not found' });
             }
 
-            // if there are uploaded files then use the path of the uploaded files else use file1 and file2
-            const inputFile1 = req.file ? req.file[0].path : file1;
-            const inputFile2 = req.file ? req.file[1].path : file2;
+            let inputFile1;
+            let inputFile2;
+
+            if (req.files.length > 1) {
+                inputFile1 = req.files[0].path;
+                inputFile2 = req.files[1].path;
+            } else {
+                inputFile1 = req.files[0].path;
+                inputFile2 = req.files[0].path;
+            }
+
             const outputFileName = uuid() + '.mp3';
             const outputFile = `public/mp3/${outputFileName}`;
 
-            const args = [
-                '-i', inputFile1,
-                '-i', inputFile2,
-                '-filter_complex', 'amix=inputs=2:duration=longest',
-                outputFile,
+            const fadeinDuration = req.body.fadeinDuration || 0;
+            const pitchDuration = req.body.pitch || 1;
+            const speedAmount = req.body.speed || 1;
+            const volumeAmount = req.body.volume || 50;
+
+            const filters = [
+                // Merge audio inputs
+                {
+                    filter: 'amix',
+                    options: { inputs: 2, duration: 'longest' },
+                    outputs: 'amix_output',
+                },
             ];
 
-            const ffmpeg = spawn('ffmpeg', args);
+            // Add fade-in filter if duration is non-zero
 
-            ffmpeg.on('exit', (code) => {
-                const fileBuffer = fs.readFileSync(outputFile);
-                const fileBuffers = Buffer.from(fileBuffer, 'base64');
+            filters.push({
+                filter: 'afade',
+                options: {
+                    type: 'in',
+                    start_time: 0,
+                    duration: fadeinDuration[0],
+                },
+                inputs: 'amix_output',
+                outputs: 'fade_output'
 
-                const tags = ID3.read(fileBuffers);
-
-                console.log(`FFmpeg process exited with code ${code}`);
-                res.status(200).send({
-                    message: 'Tracks merged successfully',
-                    data: {
-                        artist: tags['artist'] || user.username || 'Unknown',
-                        name: tags['title'] || 'Unknown',
-                        length: tags['length'] || 'Unknown',
-                        album: tags['album'] || 'Unknown',
-                        genre: tags['genre'] || 'Unknown',
-                        mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFileName}`,
-                    }
-                });
             });
+            filters.push(
+                {
+                    filter: 'atempo',
+                    options: { tempo: speedAmount[0] },
+                    inputs: 'fade_output',
+                    outputs: 'fade_output2'
+
+                });
+            filters.push(
+                {
+                    filter: 'rubberband',
+                    options: {
+                        pitch: pitchDuration[0], // Change pitch by 1.5 semitones
+                        channels: 2,
+                    },
+                    inputs: 'fade_output2',
+                    outputs: 'volume_output'
+                });
+            filters.push(
+                {
+                    filter: 'volume',
+                    options: { volume: volumeAmount[0] },
+                    inputs: 'volume_output',
+                });
+
+
+            /*filters.push({
+                filter: 'afade',
+                options: {
+                    type: 'out',
+                    start_time: 'end',
+                    duration: fadeoutDuration[0],
+                },
+                inputs: 'amix_output_fadein',
+            });*/
+            console.log(inputFile1);
+            console.log(inputFile2);
+
+            ffmpeg()
+                .input(inputFile1)
+                .input(inputFile2)
+                .complexFilter(filters)
+                .on('error', (err) => console.log('An error occurred: ' + err.message + filters))
+                .saveToFile(outputFile)
+                .on('end', () => {
+                    const fileBuffer = fs.readFileSync(outputFile);
+                    const fileBuffers = Buffer.from(fileBuffer, 'base64');
+
+                    const tags = ID3.read(fileBuffers);
+
+                    res.status(200).send({
+                        message: 'Tracks merged successfully',
+                        data: {
+                            artist: tags['artist'] || user.username || 'Unknown',
+                            name: tags['title'] || 'Unknown',
+                            length: tags['length'] || 'Unknown',
+                            album: tags['album'] || 'Unknown',
+                            Image: 'http://localhost:3000/assets/img/covers/cover.svg',
+                            genre: tags['genre'] || 'Unknown',
+                            mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFileName}`,
+                        }
+                    });
+                });
+
         } catch (error) {
             console.error(error);
             res.status(500).send({ message: 'Error mergin tracks' });

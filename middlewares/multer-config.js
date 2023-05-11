@@ -78,9 +78,7 @@ export const multipleMulter = multer({
   },
 }).array("mp3Files", 2);
 
-
-/**
- * export default multer({
+ export const singleImage = multer({
   storage: diskStorage({
     destination: (req, file, callback) => {
       const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -100,4 +98,3 @@ export const multipleMulter = multer({
     cb(undefined, true);
   },
 }).single("Image");
- */

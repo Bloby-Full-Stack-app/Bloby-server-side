@@ -2,7 +2,8 @@ import express from "express";
 import userController from "../controllers/userController.js";
 import playlistController from "../controllers/playlistController.js";
 import trackController from "../controllers/trackController.js";
-import { multipleMulter, singleMulter } from "../middlewares/multer-config.js";
+import { multipleMulter, singleImage, singleMulter } from "../middlewares/multer-config.js";
+import eventController from "../controllers/eventController.js";
 
 const router = express.Router();
 
@@ -22,4 +23,11 @@ router.get('/getPlaylist/:playlistId', playlistController.getPlaylistById);
 router.post('/commentPlaylist/:playlistId', userController.getCurrentUser, playlistController.commentPlaylist);
 router.post('/mergeTracks', multipleMulter, userController.getCurrentUser, trackController.mergeTracks);
 router.get('/fetchLikedTracks', userController.getCurrentUser, trackController.fetchLikedTracks);
+router.post('/addevent', singleImage, userController.getCurrentUser, eventController.createEvent);
+router.post('/updateevent/:eventId', singleImage, userController.getCurrentUser, eventController.updateEvent);
+router.get('/getevents', eventController.getEvents);
+router.get('/event/:eventId', eventController.getEvent);
+router.delete('/event/:eventId/delete', userController.getCurrentUser, eventController.deleteEvent);
+router.post('/event/:eventId/save' , userController.getCurrentUser, eventController.saveEvent);
+router.get('/fetchsavedevents', userController.getCurrentUser, eventController.fetchSavedEvents);
 export default router;

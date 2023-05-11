@@ -24,6 +24,11 @@ const userSchema = new Schema ({
         type: String,
         required: true
       },
+      savedEvents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event',
+        required: false
+      }],
       savedPlaylists: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Playlist',
