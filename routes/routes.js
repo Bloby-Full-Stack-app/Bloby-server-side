@@ -33,5 +33,5 @@ router.post('/event/:eventId/save' , userController.getCurrentUser, eventControl
 router.get('/fetchsavedevents', userController.getCurrentUser, eventController.fetchSavedEvents);
 router.post("/addmsg", messageController.addMessage);
 router.post("/getmsg", messageController.getMessages);
-router.get('/getusers', userController.getUsers);
+router.get('/getusers', userController.getCurrentUser, userController.getUsers);
 export default router;

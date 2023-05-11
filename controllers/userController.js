@@ -90,14 +90,8 @@ export default {
     },
 
     getUsers: async (req, res) => {
-        try {
-            const users = await User.find();
-            res.status(200).send({
-                data: users,
-            });
-        } catch (error) {
-            console.error(error);
-            res.status(500).send({ message: 'Error fetching users' });
-        }
-    }
+        // get all users without current user
+        const users = await User.find({ _id: { $ne: req.user.id } });
+        res.status(200).send({ users });
+    },
 }
