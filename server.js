@@ -7,6 +7,8 @@ import connectDb from "./config/db.js";
 import router from "./routes/routes.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Server as socket } from "socket.io";
+
 
 const app = express();
 
@@ -44,6 +46,32 @@ app.get("/api/*", function (req, res) {
 
 app.use("/public/mp3", express.static(path.join(__dirname, "public/mp3")));
 app.use("/public/images", express.static(path.join(__dirname, "public/images")));
+
+const server = app.listen(port, () =>
+  console.log(`Server started on ${port}`)
+);
+
+const io = new socket(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true,
+  },
+});
+
+global.onlineUsers = new Map();
+io.on("connection", (socket) => {
+  global.chatSocket = socket;
+  socket.on("add-user", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
+
+  socket.on("send-msg", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+    }
+  });
+});
 
 app.use(NotFoundError);
 app.use(errorHandler);

@@ -88,4 +88,16 @@ export default {
             user : newUser,
         });
     },
+
+    getUsers: async (req, res) => {
+        try {
+            const users = await User.find();
+            res.status(200).send({
+                data: users,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error fetching users' });
+        }
+    }
 }

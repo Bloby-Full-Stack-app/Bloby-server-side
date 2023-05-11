@@ -4,6 +4,7 @@ import playlistController from "../controllers/playlistController.js";
 import trackController from "../controllers/trackController.js";
 import { multipleMulter, singleImage, singleMulter } from "../middlewares/multer-config.js";
 import eventController from "../controllers/eventController.js";
+import messageController from "../controllers/messageController.js";
 
 const router = express.Router();
 
@@ -30,4 +31,7 @@ router.get('/event/:eventId', eventController.getEvent);
 router.delete('/event/:eventId/delete', userController.getCurrentUser, eventController.deleteEvent);
 router.post('/event/:eventId/save' , userController.getCurrentUser, eventController.saveEvent);
 router.get('/fetchsavedevents', userController.getCurrentUser, eventController.fetchSavedEvents);
+router.post("/addmsg", messageController.addMessage);
+router.post("/getmsg", messageController.getMessages);
+router.get('/getusers', userController.getUsers);
 export default router;
