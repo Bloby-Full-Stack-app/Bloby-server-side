@@ -34,7 +34,11 @@ const trackSchema = new mongoose.Schema({
     mp3: {
       type: String,
       required: true
-    }
+    },
+    file: {
+      type: String,
+      required: true
+    },
 });
 
 const Track = mongoose.model("Track", trackSchema);

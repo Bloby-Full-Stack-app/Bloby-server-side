@@ -14,7 +14,7 @@ router.post('/createPlaylist', userController.getCurrentUser, playlistController
 router.post('/addTrackToPlaylist/:trackId', userController.getCurrentUser, playlistController.addTrackToPlaylist);
 router.post('/removeTrackFromPlaylist/:trackId', userController.getCurrentUser, playlistController.removeTrackFromPlaylist);
 router.post('/addTrack', singleMulter, userController.getCurrentUser, trackController.addTrack);
-router.post('/uploadTrack', singleMulter, trackController.uploadTrack);
+router.post('/uploadTrack', singleMulter, userController.getCurrentUser, trackController.uploadTrack);
 router.get('/fetchTracks', trackController.fetchTracks);
 router.post('/likeTrack/:trackId', userController.getCurrentUser, trackController.likeTrack);
 router.get('/getCurrentUserReleases', userController.getCurrentUser, trackController.fetchCurrentUserReleases);
@@ -22,7 +22,7 @@ router.get('/getTrack/:trackId', trackController.getTrack);
 router.get('/getPlaylists', userController.getCurrentUser, playlistController.getCurrentUserPlaylists);
 router.get('/getPlaylist/:playlistId', playlistController.getPlaylistById);
 router.post('/commentPlaylist/:playlistId', userController.getCurrentUser, playlistController.commentPlaylist);
-router.post('/mergeTracks', multipleMulter, userController.getCurrentUser, trackController.mergeTracks);
+router.post('/mergeTracks', userController.getCurrentUser, trackController.mergeTracks);
 router.get('/fetchLikedTracks', userController.getCurrentUser, trackController.fetchLikedTracks);
 router.post('/addevent', singleImage, userController.getCurrentUser, eventController.createEvent);
 router.post('/updateevent/:eventId', singleImage, userController.getCurrentUser, eventController.updateEvent);
@@ -34,4 +34,5 @@ router.get('/fetchsavedevents', userController.getCurrentUser, eventController.f
 router.post("/addmsg", messageController.addMessage);
 router.post("/getmsg", messageController.getMessages);
 router.get('/getusers', userController.getCurrentUser, userController.getUsers);
+router.get('/artist/:userId', userController.getUserById);
 export default router;

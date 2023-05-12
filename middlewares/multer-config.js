@@ -38,7 +38,7 @@ export const singleMulter =  multer({
     },
   }),
   fileFilter: (req, file, cb) => {
-    if (!file.originalname.match(/\.mp3$/)) {
+    if (!file.originalname.match(/\.(mp3|webm|wav|mp4)$/)) {
       return cb(new Error('Please upload an mp3 file.'));
     }
     cb(null, true);

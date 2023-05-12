@@ -13,7 +13,7 @@ export default {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const { artist, name, image, album, genre, mp3 } = req.body;
+        const { artist, name, image, album, genre, mp3, file } = req.body;
 
         try {
             const user = await User.findById(userId);
@@ -29,6 +29,7 @@ export default {
                 album: album,
                 genre: genre,
                 mp3: mp3,
+                file: file
             });
 
             await newTrack.save();
@@ -48,17 +49,45 @@ export default {
 
     uploadTrack: async (req, res) => {
         const errors = validationResult(req);
-        //const userId = req.user.id;
+        const userId = req.user.id;
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        try {
-            const fileBuffer = fs.readFileSync(req.file.path);
-            const fileBuffers = Buffer.from(fileBuffer, 'base64');
-            // Parse the ID3 tags
 
+        try {
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const { path, filename } = req.file;
+            const fileBuffer = fs.readFileSync(path);
+            const fileBuffers = Buffer.from(fileBuffer, 'base64');
+
+            // Check the file extension
+            const isWebm = req.file.originalname.endsWith('.webm');
+            const convertedFilename = isWebm ? `${filename}.mp3` : filename;
+
+            if (isWebm) {
+                // Convert the file from webm to mp3
+                await new Promise((resolve, reject) => {
+                    ffmpeg(path)
+                        .toFormat('mp3')
+                        .output(`${path}.mp3`)
+                        .on('end', resolve)
+                        .on('error', reject)
+                        .run();
+                });
+            }
+
+            // Read the converted or original file data
+            const fileData = fs.readFileSync(isWebm ? `${path}.mp3` : path);
+
+            // Parse the ID3 tags
             const tags = ID3.read(fileBuffers);
             const imageName = uuid();
+
             if (tags['image']) {
                 const imagePath = `public/images/${imageName}.png`;
                 fs.writeFile(imagePath, tags['image']['imageBuffer'], (err) => {
@@ -66,28 +95,28 @@ export default {
                         console.error(err);
                         return;
                     }
-                    console.log('Image saved successfully');
                 });
             }
 
             res.status(201).send({
                 message: 'Track uploaded successfully',
                 data: {
-                    artist: tags['artist'] || 'Unknown',
+                    file: req.file.path,
+                    artist: tags['artist'] || user.username,
                     name: tags['title'] || 'Unknown',
                     length: tags['length'] || 'Unknown',
-                    Image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png`,
+                    Image: tags['image'] ? `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${imageName}.png` : 'http://localhost:3000/assets/img/covers/cover.svg',
                     album: tags['album'] || 'Unknown',
                     genre: tags['genre'] || 'Unknown',
-                    mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${req.file.filename}`,
+                    mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${convertedFilename}`,
                 }
             });
         } catch (error) {
             console.error(error);
             res.status(500).send({ message: 'Error uploading track', error: error });
         }
-
     },
+
 
     fetchTracks: async (req, res) => {
         try {
@@ -199,24 +228,26 @@ export default {
                 return res.status(404).send({ message: 'User not found' });
             }
 
-            let inputFile1;
-            let inputFile2;
+            
 
-            if (req.files.length > 1) {
-                inputFile1 = req.files[0].path;
-                inputFile2 = req.files[1].path;
-            } else {
-                inputFile1 = req.files[0].path;
-                inputFile2 = req.files[0].path;
-            }
+            //if (req.files.length > 1) {
+                //inputFile1 = req.files[0].path;
+                //inputFile2 = req.files[1].path;
+            //}
+
+            //console.log(req.files);
 
             const outputFileName = uuid() + '.mp3';
             const outputFile = `public/mp3/${outputFileName}`;
 
+            const inputFile1 = req.body.firstfile;
+            const inputFile2 = req.body.secondfile;
             const fadeinDuration = req.body.fadeinDuration || 0;
             const pitchDuration = req.body.pitch || 1;
             const speedAmount = req.body.speed || 1;
-            const volumeAmount = req.body.volume || 50;
+            const volumeAmount = req.body.volume || 0.5;
+
+            console.log(req.body)
 
             const filters = [
                 // Merge audio inputs
@@ -300,6 +331,7 @@ export default {
                             Image: 'http://localhost:3000/assets/img/covers/cover.svg',
                             genre: tags['genre'] || 'Unknown',
                             mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFileName}`,
+                            file: `/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/${outputFileName}`
                         }
                     });
                 });

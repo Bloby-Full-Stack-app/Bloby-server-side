@@ -20,7 +20,7 @@ const eventSchema = new Schema({
     },
     date: {
       type: Date,
-      required: false
+      required: true,
     },
 }, {
     timestamps: true

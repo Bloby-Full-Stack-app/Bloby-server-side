@@ -17,10 +17,9 @@ export default {
         if (!await bcrypt.compare(password, user.password)) {
             return res.status(400).json ({
                 statusCode : 400, 
-                message: 'Password is incorrect'
+                message: 'Invalid credentials',
             });
           }
-
         /*if (!user.isVerified) {
             return res.status(401).send({ statusCode : 401,  message: 'User is not verified' });
         }*/
@@ -65,13 +64,35 @@ export default {
     },
 
     Register : async (req, res) => {
-        const { username, email, password, confirmPassword } = req.body;
-        const user = await User.findOne ({ email });
+        const { username, email, password, confirmPassword, role } = req.body;
+        const user = await User.findOne({ $or: [{ email }, { username }] });
+        
+        const re = /\S+@\S+\.\S+/;
+        if (!re.test(email)) {
+            return res.status(400).send({
+                statusCode : 400,
+                message : "Email is not valid",
+            });
+        }
+
+        if (user) {
+            return res.status(400).send({
+                statusCode : 400,
+                message : "This email is already registered",
+            });
+        }
 
         if (password !== confirmPassword) {
             return res.status(400).send({
                 statusCode : 400,
                 message : "Passwords do not match",
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).send({
+                statusCode : 400,
+                message : "Password should be at least 6 characters",
             });
         }
         
@@ -81,6 +102,7 @@ export default {
             username,
             email,
             password: hashedPassword,
+            role: role
         });
         return res.status(200).send({
             statusCode : 200,
@@ -93,5 +115,21 @@ export default {
         // get all users without current user
         const users = await User.find({ _id: { $ne: req.user.id } });
         res.status(200).send({ users });
+    },
+
+    getUserById: async (req, res) => {
+        const { userId } = req.params;
+        try {
+            const artist = await User.findById(userId).populate('likedTracks').populate('releases');
+            if (!artist) {
+                return res.status(404).send({ message: 'User not found' });
+            }
+            res.status(200).send({
+                data: artist,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error fetching artist' });
+        }
     },
 }

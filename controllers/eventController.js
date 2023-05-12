@@ -7,7 +7,7 @@ export default {
     createEvent: async (req, res) => {
         const errors = validationResult(req);
         const userId = req.user.id;
-        const { title, about, address } = req.body;
+        const { title, about, address, date } = req.body;
 
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -24,6 +24,7 @@ export default {
                 title: title,
                 address: address,
                 about: about,
+                date: date,
                 image: `${req.protocol}://${req.get("host")}${process.env.IMGURL}/${req.file.filename}`,
             });
 

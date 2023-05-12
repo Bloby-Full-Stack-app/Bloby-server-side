@@ -38,8 +38,14 @@ const userSchema = new Schema ({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Track',
         required: false
-      }]
-})
+      }],
+      role: {
+        type: String,
+        required: false,
+      },
+    }, {
+      timestamps: true
+});
 
 const User = mongoose.model("User", userSchema);
 export { User };
