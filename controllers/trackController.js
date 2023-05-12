@@ -187,7 +187,7 @@ export default {
                 await user.save();
                 res.status(200).send({
                     isLiked: isLiked,
-                    message: 'Track unliked successfully'
+                    message: 'Track unliked'
                 });
             } else {
                 user.likedTracks.push(track);
@@ -195,7 +195,7 @@ export default {
                 await user.save();
                 res.status(200).send({
                     isLiked: isLiked,
-                    message: 'Track liked successfully'
+                    message: 'Track liked'
                 });
             }
         } catch (error) {
@@ -245,7 +245,7 @@ export default {
             const fadeinDuration = req.body.fadeinDuration || 0;
             const pitchDuration = req.body.pitch || 1;
             const speedAmount = req.body.speed || 1;
-            const volumeAmount = req.body.volume || 0.5;
+            const volumeAmount = req.body.volume || 1.5;
 
             console.log(req.body)
 
@@ -296,7 +296,6 @@ export default {
                     inputs: 'volume_output',
                 });
 
-
             /*filters.push({
                 filter: 'afade',
                 options: {
@@ -341,5 +340,67 @@ export default {
             res.status(500).send({ message: 'Error mergin tracks' });
         }
     },
+
+    trimTrack: async (req, res) => {
+        const userId = req.user.id;
+
+        try {
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).send({ message: 'User not found' });
+            }
+
+            const outputFileName = uuid() + '.mp3';
+            const outputFile = `public/mp3/${outputFileName}`;
+
+            const inputFile1 = req.body.file;
+            const startTime = req.body.startTime;
+            const endTime = req.body.endTime;
+
+            const filters = [
+                {
+                    filter: 'atrim',
+                    options: {
+                      start: 0,
+                      end: 5,
+                    },
+                    inputs: inputFile1,
+                },
+            ];
+
+            ffmpeg()
+                .input(inputFile1)
+                .setStartTime(startTime)
+                .setDuration(endTime)
+                .on('error', (err) => console.log('An error occurred: ' + err.message + filters))
+                .saveToFile(outputFile)
+                .on('end', () => {
+                    const fileBuffer = fs.readFileSync(outputFile);
+                    const fileBuffers = Buffer.from(fileBuffer, 'base64');
+
+                    const tags = ID3.read(fileBuffers);
+
+                    res.status(200).send({
+                        message: 'Track trimmed successfully',
+                        data: {
+                            artist: tags['artist'] || user.username || 'Unknown',
+                            name: tags['title'] || 'Unknown',
+                            length: tags['length'] || 'Unknown',
+                            album: tags['album'] || 'Unknown',
+                            Image: 'http://localhost:3000/assets/img/covers/cover.svg',
+                            genre: tags['genre'] || 'Unknown',
+                            mp3: `${req.protocol}://${req.get("host")}${process.env.MP3URL}/${outputFileName}`,
+                            file: `/Users/chawki/Documents/GitHub/blobly/Bloby-server-side/public/mp3/${outputFileName}`
+                        }
+                    });
+                });
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error mergin tracks' });
+        }
+    },
+
 
 }
